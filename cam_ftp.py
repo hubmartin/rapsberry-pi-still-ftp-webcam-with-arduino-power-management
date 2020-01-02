@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+#xxx
 import os
 import ftplib
 import time
@@ -21,6 +21,8 @@ humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, '4')
 voltage = 0.0
 with serial.Serial('/dev/ttyS0', 115200, timeout=3.0) as ser:
     ser.reset_input_buffer()
+    # Must-have: Dummy read to clean input buffer
+    ser.readline()
     voltage = ser.readline().strip()
     print("voltage: "+ voltage)
 
