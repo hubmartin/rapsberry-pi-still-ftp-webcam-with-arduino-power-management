@@ -22,19 +22,77 @@
   http://www.arduino.cc/en/Tutorial/Blink
 */
 
-#undef LED_BUILTIN
-#define LED_BUILTIN 2
+#include <avr/power.h> // don't forget this!
+
+//#ifdef F_CPU
+//#undef F_CPU
+//#define F_CPU (16000000UL / 32)
+//#endif
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-  // initialize digital pin LED_BUILTIN as an output.
+  //clock_prescale_set (clock_div_32); 
   pinMode(LED_BUILTIN, OUTPUT);
+  
 }
 
-// the loop function runs over and over again forever
+double mapf(double val, double in_min, double in_max, double out_min, double out_max) {
+    return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+float getVoltage()
+{
+  int i = analogRead(A6);
+  return mapf(i, 111, 220, 6.0f, 12.0f);
+}
+
+void ledBlink(unsigned long period, int count)
+{
+  for (int i = 0; i < count; i++)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(period/2);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(period/2);
+  }
+}
+
+void delayWithData(unsigned long ms)
+{
+  unsigned long timestamp = millis() + ms;
+  Serial.begin(115200);
+  while(millis() <= timestamp)
+  {
+    delay(500);
+    Serial.println(getVoltage());
+  }
+  Serial.end();
+}
+
+void rpiPower(bool enable)
+{
+  if(enable)
+  {
+    digitalWrite(2, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    digitalWrite(2, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+}
+
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(80000);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  delay(5000);                       // wait for a second
+
+  if(getVoltage() > 10.8f)
+  {
+    rpiPower(true); 
+    delayWithData(60000);
+  }
+  else
+  {
+    ledBlink(200, 6);
+  }
+  
+  rpiPower(false);
+  delay(4000);    
 }
