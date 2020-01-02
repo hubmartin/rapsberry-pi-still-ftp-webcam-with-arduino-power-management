@@ -2,6 +2,8 @@
 
 This project contains Python script that will take a still picture from Raspberry Pi camera after boot and transfer it over network to the FTP server.
 
+In the image there is also temperature and humidity from DTH22 AM2302 sensor.
+
 The Rpi is periodically turned on and off by Arduino and P-FET. This way the node can work from batteries with solar-charger.
 
 If there is a `update.py` file in the target FTP directory, the script in Rpi is automatically downloaded over FTP and updated. Next time is run this updated version.
