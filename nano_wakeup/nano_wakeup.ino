@@ -1,39 +1,27 @@
 /*
-  Blink
 
-  Turns an LED on for one second, then off for one second, repeatedly.
+  Solar-powered Raspberry Pi picture camera with Arduino for power-on/off
 
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
-
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
-
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/Blink
+  martinhubacek.cz
+  https://github.com/hubmartin/rapsberry-pi-still-ftp-webcam-with-arduino-power-management
+  
 */
 
-#include <avr/power.h> // don't forget this!
-
+#include <avr/power.h>
 //#ifdef F_CPU
 //#undef F_CPU
 //#define F_CPU (16000000UL / 32)
 //#endif
 
+#define RPI_ON_PERIOD_MS (60 * 1000ul)
+#define RPI_OFF_PERIOD_MS (15 * 60ul * 1000ul)
+#define SAFETY_CUTOFF_VOLTAGE 10.8f
+
+float voltage_unloaded = 0.0f;
+
 // the setup function runs once when you press reset or power the board
 void setup() {
-  //clock_prescale_set (clock_div_32); 
   pinMode(LED_BUILTIN, OUTPUT);
-  
 }
 
 double mapf(double val, double in_min, double in_max, double out_min, double out_max) {
@@ -64,7 +52,9 @@ void delayWithData(unsigned long ms)
   while(millis() <= timestamp)
   {
     delay(500);
-    Serial.println(getVoltage());
+    Serial.print(getVoltage());
+    Serial.print(",");
+    Serial.println(voltage_unloaded);
   }
   Serial.end();
 }
@@ -83,10 +73,11 @@ void rpiPower(bool enable)
 
 void loop() {
 
-  if(getVoltage() > 10.8f)
+  voltage_unloaded = getVoltage();
+  if(voltage_unloaded > SAFETY_CUTOFF_VOLTAGE)
   {
     rpiPower(true); 
-    delayWithData(60000);
+    delayWithData(RPI_ON_PERIOD_MS);
   }
   else
   {
@@ -94,5 +85,10 @@ void loop() {
   }
   
   rpiPower(false);
-  delay(4000);    
+
+  // slow MCU down 128x times to save some power
+  // Improvements with sleep and deepsleep&edg are welcome
+  clock_prescale_set (clock_div_128); 
+  delay(RPI_OFF_PERIOD_MS / 128);    
+  clock_prescale_set (clock_div_1); 
 }
